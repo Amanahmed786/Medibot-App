@@ -1,0 +1,11 @@
+# Ignore environment and secrets files
+.env
+.streamlit/
+
+# Ignore vectorstore data
+vectorstore/
+data/
+
+# Ignore system files
+__pycache__/
+*.pyc
