@@ -1,3 +1,6 @@
+[server]
+port = $PORT
+enableCORS = false
 [theme]
 primaryColor = "#ff4b4b"
 backgroundColor = "#121212"
