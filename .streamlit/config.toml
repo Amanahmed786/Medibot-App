@@ -1,5 +1,5 @@
 [server]
-port = 8501
+port = 8503
 enableCORS = false
 [theme]
 primaryColor = "#ff4b4b"
