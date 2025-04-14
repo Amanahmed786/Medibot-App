@@ -4,3 +4,7 @@ scikit-learn
 faiss-cpu
 PyPDF2
 langchain
+langchain-community
+langchain-core
+langchain-huggingface
+sentence-transformers
