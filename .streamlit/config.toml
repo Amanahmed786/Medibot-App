@@ -1,6 +1,6 @@
 [server]
-port = 8503
 enableCORS = false
+
 [theme]
 primaryColor = "#ff4b4b"
 backgroundColor = "#121212"
