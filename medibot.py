@@ -8,6 +8,11 @@ from langchain_huggingface import HuggingFaceEndpoint
 
 DB_FAISS_PATH = "vectorstore/db_faiss"
 
+# Force Streamlit to use the correct port assigned by Render
+port = int(os.environ.get("PORT", 8501))
+st.set_page_config(page_title="MediBot")
+
+
 @st.cache_resource(show_spinner=False)
 def get_vectorstore():
     """Loads the FAISS vector store with embeddings."""
