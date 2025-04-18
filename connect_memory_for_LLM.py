@@ -48,6 +48,13 @@ def set_custom_prompt(custom_prompt_template):
 # Load Database
 DB_FAISS_PATH="vectorstore/db_faiss"
 embedding_model=HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
+# Check if FAISS index files exist before loading
+index_faiss_path = os.path.join(DB_FAISS_PATH, "index.faiss")
+index_pkl_path = os.path.join(DB_FAISS_PATH, "index.pkl")
+
+if not os.path.exists(index_faiss_path) or not os.path.exists(index_pkl_path):
+    raise FileNotFoundError(f"FAISS files not found at {DB_FAISS_PATH}. Check if they were uploaded properly.")
+
 db=FAISS.load_local(DB_FAISS_PATH, embedding_model, allow_dangerous_deserialization=True)
 
 # Create QA chain
