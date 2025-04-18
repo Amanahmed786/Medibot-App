@@ -9,27 +9,29 @@ from langchain.chains import RetrievalQA
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_community.vectorstores import FAISS
 
-## Uncomment the following files if you're not using pipenv as your virtual environment manager
-#from dotenv import load_dotenv, find_dotenv
-#load_dotenv(find_dotenv())
-
+## Uncomment if you're using dotenv to manage secrets locally
+# from dotenv import load_dotenv, find_dotenv
+# load_dotenv(find_dotenv())
 
 # Step 1: Setup LLM (Mistral with HuggingFace)
-HF_TOKEN=os.environ.get("HF_TOKEN")
-HUGGINGFACE_REPO_ID="mistralai/Mistral-7B-Instruct-v0.3"
+HF_TOKEN = os.environ.get("HF_TOKEN")
+HUGGINGFACE_REPO_ID = "mistralai/Mistral-7B-Instruct-v0.3"
 
 def load_llm(huggingface_repo_id):
-    llm=HuggingFaceEndpoint(
+    print("[INFO] Initializing LLM...")
+    if not HF_TOKEN:
+        raise EnvironmentError("HF_TOKEN is not set in the environment variables.")
+    return HuggingFaceEndpoint(
         repo_id=huggingface_repo_id,
         task="text-generation",
         temperature=0.5,
-        model_kwargs={"token":HF_TOKEN,
-                      "max_length":"512"}
+        model_kwargs={
+            "token": HF_TOKEN,
+            "max_length": "512"
+        }
     )
-    return llm
 
-# Step 2: Connect LLM with FAISS and Create chain
-
+# Step 2: Define custom prompt
 CUSTOM_PROMPT_TEMPLATE = """
 Use the pieces of information provided in the context to answer user's question.
 If you dont know the answer, just say that you dont know, dont try to make up an answer. 
@@ -42,35 +44,38 @@ Start the answer directly. No small talk please.
 """
 
 def set_custom_prompt(custom_prompt_template):
-    prompt=PromptTemplate(template=custom_prompt_template, input_variables=["context", "question"])
-    return prompt
+    return PromptTemplate(template=custom_prompt_template, input_variables=["context", "question"])
 
-# Load Database
-DB_FAISS_PATH="vectorstore/db_faiss"
-embedding_model=HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
-# Check if FAISS index files exist before loading
+# Step 3: Load FAISS database
+DB_FAISS_PATH = "vectorstore/db_faiss"
+embedding_model = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
+
 index_faiss_path = os.path.join(DB_FAISS_PATH, "index.faiss")
 index_pkl_path = os.path.join(DB_FAISS_PATH, "index.pkl")
 
 if not os.path.exists(index_faiss_path) or not os.path.exists(index_pkl_path):
-    raise FileNotFoundError(f"FAISS files not found at {DB_FAISS_PATH}. Check if they were uploaded properly.")
+    raise FileNotFoundError(f"[ERROR] FAISS files not found at {DB_FAISS_PATH}. Ensure index.faiss and index.pkl are present.")
 
-db=FAISS.load_local(DB_FAISS_PATH, embedding_model, allow_dangerous_deserialization=True)
+print("[INFO] Loading FAISS vectorstore...")
+db = FAISS.load_local(DB_FAISS_PATH, embedding_model, allow_dangerous_deserialization=True)
+print("[INFO] Vectorstore loaded successfully.")
 
-# Create QA chain
-qa_chain=RetrievalQA.from_chain_type(
+# Step 4: Create QA chain
+print("[INFO] Creating Retrieval QA chain...")
+qa_chain = RetrievalQA.from_chain_type(
     llm=load_llm(HUGGINGFACE_REPO_ID),
     chain_type="stuff",
-    retriever=db.as_retriever(search_kwargs={'k':3}),
+    retriever=db.as_retriever(search_kwargs={'k': 3}),
     return_source_documents=True,
-    chain_type_kwargs={'prompt':set_custom_prompt(CUSTOM_PROMPT_TEMPLATE)}
+    chain_type_kwargs={'prompt': set_custom_prompt(CUSTOM_PROMPT_TEMPLATE)}
 )
+print("[INFO] QA chain ready.")
 
-# Now invoke with a single query
-user_query=input("Write Query Here: ")
-response=qa_chain.invoke({'query': user_query})
-print("RESULT: ", response["result"])
-print("SOURCE DOCUMENTS: ", response["source_documents"])
-
-
-
+# Step 5: Query loop (single prompt for now)
+try:
+    user_query = input("Write Query Here: ")
+    response = qa_chain.invoke({'query': user_query})
+    print("\nRESULT:\n", response["result"])
+    print("\nSOURCE DOCUMENTS:\n", response["source_documents"])
+except Exception as e:
+    print("[ERROR] Something went wrong while processing your query:", str(e))
