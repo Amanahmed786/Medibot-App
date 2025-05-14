@@ -34,7 +34,7 @@ def set_custom_prompt(custom_prompt_template):
 def load_llm(huggingface_repo_id):
     """Loads the HuggingFace LLM with a secure token."""
     try:
-        HF_TOKEN = st.secrets.get("HF_TOKEN")
+        HF_TOKEN = os.environ.get("HF_TOKEN")
         if not HF_TOKEN:
             st.error("Hugging Face API token is missing! Add it in Streamlit secrets.")
             return None
